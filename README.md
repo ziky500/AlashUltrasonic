@@ -160,4 +160,3 @@ Special thanks to all contributors and the open-source community for their suppo
 ## Contact
 
 For any questions or suggestions, feel free to open an issue on the [GitHub repository](https://github.com/Alash-electronics/AlashUltrasonic) or contact me at alash.electronics@gmail.com
-```
