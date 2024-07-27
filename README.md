@@ -161,7 +161,3 @@ Special thanks to all contributors and the open-source community for their suppo
 
 For any questions or suggestions, feel free to open an issue on the [GitHub repository](https://github.com/Alash-electronics/AlashUltrasonic) or contact me at alash.electronics@gmail.com
 ```
-
-### Описание
-- Этот файл `README.md` содержит основную информацию о библиотеке, инструкции по установке, примеры использования для каждого типа подключения, описание API и контактную информацию.
-- Замените `Alash engineer` и `alash.electronics@gmail.com` на ваши фактические данные.
