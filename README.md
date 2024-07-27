@@ -1,4 +1,3 @@
-```markdown
 # AlashUltrasonic Library
 
 This library allows you to interface with the RCWL-9610 ultrasonic distance sensor using GPIO, I2C, UART, and 1-Wire interfaces. It provides a simple way to measure distances in centimeters.
@@ -30,8 +29,6 @@ This library allows you to interface with the RCWL-9610 ultrasonic distance sens
 
 - **I2C Configuration**:
   - The solder jumper "M2" (back of board bottom right) must be closed by putting a blob of solder on it (M1 must be open, no blob).
-
-```
 
 ## Usage
 
