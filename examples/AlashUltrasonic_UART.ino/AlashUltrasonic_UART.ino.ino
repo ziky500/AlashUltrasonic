@@ -4,7 +4,7 @@
 const uint8_t RX_PIN = 3; // Подключите Echo_TX_SDA
 const uint8_t TX_PIN = 2; // Подключите Trig_RX_SCL_I/O
 
-AlashUltrasonic sensorUART(RX_PIN, TX_PIN, true); // (Echo_TX_SDA, Trig_RX_SCL_I/O, isUART?)
+AlashUltrasonic sensorUART(RX_PIN, TX_PIN, UART_MODE); // (Echo_TX_SDA, Trig_RX_SCL_I/O)
 
 void setup() {
   Serial.begin(9600);

@@ -5,13 +5,21 @@
 #include <Wire.h>
 #include <SoftwareSerial.h>
 
+// Enum для типов подключения
+enum ConnectionType {
+  GPIO_MODE,
+  I2C_MODE,
+  UART_MODE,
+  ONEWIRE_MODE
+};
+
 class AlashUltrasonic {
   public:
-    // Конструкторы для GPIO, I2C, UART и 1-Wire
-    AlashUltrasonic(uint8_t triggerPin, uint8_t echoPin);
-    AlashUltrasonic(uint8_t i2cAddress);
-    AlashUltrasonic(uint8_t rxPin, uint8_t txPin, bool useUART);
-    AlashUltrasonic(uint8_t oneWirePin, bool useOneWire);
+    // Конструкторы для разных типов подключения
+    AlashUltrasonic(uint8_t triggerPin, uint8_t echoPin);  // GPIO
+    AlashUltrasonic(uint8_t i2cAddress);                   // I2C
+    AlashUltrasonic(uint8_t rxPin, uint8_t txPin, ConnectionType type); // UART с явным указанием типа
+    AlashUltrasonic(uint8_t oneWirePin, ConnectionType type); // 1-Wire с явным указанием типа
 
     // Инициализация
     void begin();
@@ -34,11 +42,9 @@ class AlashUltrasonic {
     
     // Переменные для 1-Wire
     uint8_t _oneWirePin;
-    bool _useOneWire;
 
     // Общие переменные
-    bool _useI2C;
-    bool _useUART;
+    ConnectionType _connectionType;
     unsigned long _lastReadTime;
     
     // Внутренние функции для измерения расстояния

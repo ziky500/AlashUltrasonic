@@ -7,6 +7,7 @@ This library allows you to interface with the RCWL-9610 ultrasonic distance sens
 - Support for multiple communication interfaces: GPIO, I2C, UART, and 1-Wire.
 - Easy-to-use API for measuring distance.
 - Compatible with Arduino.
+- **NEW**: Resolved constructor ambiguity issues for better type safety.
 
 ## Installation
 
@@ -14,7 +15,6 @@ This library allows you to interface with the RCWL-9610 ultrasonic distance sens
 2. Unzip the downloaded file.
 3. Move the unzipped folder to your Arduino libraries directory (usually located in `Documents/Arduino/libraries`).
 4. Restart the Arduino IDE.
-
 
 ## Configuration
 
@@ -38,8 +38,8 @@ This library allows you to interface with the RCWL-9610 ultrasonic distance sens
 #include <AlashUltrasonic.h>
 
 // GPIO pins
-const uint8_t TRIGGER_PIN = A5;
-const uint8_t ECHO_PIN = A4;
+const uint8_t TRIGGER_PIN = 7;
+const uint8_t ECHO_PIN = 8;
 
 AlashUltrasonic sensorGPIO(TRIGGER_PIN, ECHO_PIN);
 
@@ -84,23 +84,23 @@ void loop() {
 ### Example for UART
 
 ```cpp
-#include <RCWL9610.h>
+#include <AlashUltrasonic.h>
 
-// Параметры для UART
+// UART pins
 const uint8_t RX_PIN = 3; // Подключите Echo_TX_SDA
 const uint8_t TX_PIN = 2; // Подключите Trig_RX_SCL_I/O
 
-RCWL9610 sensorUART(RX_PIN, TX_PIN, true); // (Echo_TX_SDA, Trig_RX_SCL_I/O, isUART?)
+AlashUltrasonic sensorUART(RX_PIN, TX_PIN, UART_MODE);
 
 void setup() {
   Serial.begin(9600);
   sensorUART.begin();
 }
+
 void loop() {  
-  // Использование датчика через UART
-  float distanceUART = sensorUART.getDistance();
+  float distance = sensorUART.getDistance();
   Serial.print("Distance (UART): ");
-  Serial.print(distanceUART);
+  Serial.print(distance);
   Serial.println(" cm");
   delay(1000);
 }
@@ -114,7 +114,7 @@ void loop() {
 // 1-Wire pin
 const uint8_t ONE_WIRE_PIN = A5;
 
-AlashUltrasonic sensorOneWire(ONE_WIRE_PIN, true);
+AlashUltrasonic sensorOneWire(ONE_WIRE_PIN, ONEWIRE_MODE);
 
 void setup() {
   Serial.begin(9600);
@@ -130,6 +130,47 @@ void loop() {
 }
 ```
 
+### Example with All Modes
+
+```cpp
+#include <AlashUltrasonic.h>
+
+// Параметры для разных типов подключения
+const uint8_t TRIGGER_PIN = 7;
+const uint8_t ECHO_PIN = 8;
+const uint8_t I2C_ADDRESS = 0x57;
+const uint8_t RX_PIN = 3;
+const uint8_t TX_PIN = 2;
+const uint8_t ONE_WIRE_PIN = A5;
+
+// Создание объектов для разных типов подключения
+AlashUltrasonic sensorGPIO(TRIGGER_PIN, ECHO_PIN);           // GPIO режим
+AlashUltrasonic sensorI2C(I2C_ADDRESS);                      // I2C режим
+AlashUltrasonic sensorUART(RX_PIN, TX_PIN, UART_MODE);       // UART режим
+AlashUltrasonic sensorOneWire(ONE_WIRE_PIN, ONEWIRE_MODE);   // 1-Wire режим
+
+void setup() {
+  Serial.begin(9600);
+  
+  // Инициализация всех датчиков
+  sensorGPIO.begin();
+  sensorI2C.begin();
+  sensorUART.begin();
+  sensorOneWire.begin();
+}
+
+void loop() {
+  // Измерения с разных датчиков
+  float distanceGPIO = sensorGPIO.getDistance();
+  float distanceI2C = sensorI2C.getDistance();
+  float distanceUART = sensorUART.getDistance();
+  float distanceOneWire = sensorOneWire.getDistance();
+  
+  // Вывод результатов...
+  delay(1000);
+}
+```
+
 ## API Reference
 
 ### `AlashUltrasonic`
@@ -138,13 +179,30 @@ void loop() {
 
 - `AlashUltrasonic(uint8_t triggerPin, uint8_t echoPin)`: Initialize the sensor with GPIO pins.
 - `AlashUltrasonic(uint8_t i2cAddress)`: Initialize the sensor with an I2C address.
-- `AlashUltrasonic(uint8_t rxPin, uint8_t txPin, bool useUART)`: Initialize the sensor with UART pins.
-- `AlashUltrasonic(uint8_t oneWirePin, bool useOneWire)`: Initialize the sensor with a 1-Wire pin.
+- `AlashUltrasonic(uint8_t rxPin, uint8_t txPin, ConnectionType type)`: Initialize the sensor with UART pins and connection type.
+- `AlashUltrasonic(uint8_t oneWirePin, ConnectionType type)`: Initialize the sensor with a 1-Wire pin and connection type.
+
+#### ConnectionType Enum
+
+```cpp
+enum ConnectionType {
+  GPIO_MODE,
+  I2C_MODE,
+  UART_MODE,
+  ONEWIRE_MODE
+};
+```
 
 #### Methods
 
 - `void begin()`: Initialize the sensor.
 - `float getDistance()`: Get the distance in centimeters.
+
+## Breaking Changes in v2.0
+
+- **UART Constructor**: Changed from `AlashUltrasonic(rxPin, txPin, bool useUART)` to `AlashUltrasonic(rxPin, txPin, UART_MODE)`.
+- **1-Wire Constructor**: Changed from `AlashUltrasonic(oneWirePin, true)` to `AlashUltrasonic(oneWirePin, ONEWIRE_MODE)`.
+- **Better Type Safety**: All constructors now have unique signatures, preventing ambiguity when using similar pin numbers.
 
 ## License
 

@@ -4,52 +4,50 @@
 AlashUltrasonic::AlashUltrasonic(uint8_t triggerPin, uint8_t echoPin) {
   _triggerPin = triggerPin;
   _echoPin = echoPin;
-  _useI2C = false;
-  _useUART = false;
-  _useOneWire = false;
+  _connectionType = GPIO_MODE;
   _lastReadTime = 0;
 }
 
 // Конструктор для I2C
 AlashUltrasonic::AlashUltrasonic(uint8_t i2cAddress) {
   _i2cAddress = i2cAddress;
-  _useI2C = true;
-  _useUART = false;
-  _useOneWire = false;
+  _connectionType = I2C_MODE;
   _lastReadTime = 0;
 }
 
 // Конструктор для UART
-AlashUltrasonic::AlashUltrasonic(uint8_t rxPin, uint8_t txPin, bool useUART) {
+AlashUltrasonic::AlashUltrasonic(uint8_t rxPin, uint8_t txPin, ConnectionType type) {
   _rxPin = rxPin;
   _txPin = txPin;
-  _useUART = useUART;
-  _useI2C = false;
-  _useOneWire = false;
+  _connectionType = type;
   _lastReadTime = 0;
   _serial = new SoftwareSerial(_rxPin, _txPin);
 }
 
 // Конструктор для 1-Wire
-AlashUltrasonic::AlashUltrasonic(uint8_t oneWirePin, bool useOneWire) {
+AlashUltrasonic::AlashUltrasonic(uint8_t oneWirePin, ConnectionType type) {
   _oneWirePin = oneWirePin;
-  _useOneWire = useOneWire;
-  _useI2C = false;
-  _useUART = false;
+  _connectionType = type;
   _lastReadTime = 0;
 }
 
 // Инициализация
 void AlashUltrasonic::begin() {
-  if (_useI2C) {
-    Wire.begin();
-  } else if (_useUART) {
-    _serial->begin(9600);
-  } else if (_useOneWire) {
-    pinMode(_oneWirePin, OUTPUT);
-  } else {
-    pinMode(_triggerPin, OUTPUT);
-    pinMode(_echoPin, INPUT);
+  switch (_connectionType) {
+    case I2C_MODE:
+      Wire.begin();
+      break;
+    case UART_MODE:
+      _serial->begin(9600);
+      break;
+    case ONEWIRE_MODE:
+      pinMode(_oneWirePin, OUTPUT);
+      break;
+    case GPIO_MODE:
+    default:
+      pinMode(_triggerPin, OUTPUT);
+      pinMode(_echoPin, INPUT);
+      break;
   }
 }
 
@@ -60,14 +58,16 @@ float AlashUltrasonic::getDistance() {
   }
   _lastReadTime = millis();
 
-  if (_useI2C) {
-    return getDistanceI2C();
-  } else if (_useUART) {
-    return getDistanceUART();
-  } else if (_useOneWire) {
-    return getDistanceOneWire();
-  } else {
-    return getDistanceGPIO();
+  switch (_connectionType) {
+    case I2C_MODE:
+      return getDistanceI2C();
+    case UART_MODE:
+      return getDistanceUART();
+    case ONEWIRE_MODE:
+      return getDistanceOneWire();
+    case GPIO_MODE:
+    default:
+      return getDistanceGPIO();
   }
 }
 
