@@ -81,47 +81,46 @@ float AlashUltrasonic::getDistanceGPIO() {
   return calculateDistance(duration);
 }
 
-// Измерение расстояния через I2C (robust ver.)
+// measures distance over i2c; returns centimeters on success, -1.0f on error/timeout
 float AlashUltrasonic::getDistanceI2C() {
-  // send "start measurement" and check ack  2  return -1 on i2c error
-  if (Wire.beginTransmission(_i2cAddress), Wire.write((uint8_t)0x01), Wire.endTransmission() != 0) {
-    return -1.0f;  // i2c error
-  }
+  // trigger a new ranging cycle and bail out if the device does not ack  2  this prevents parsing garbage when the bus is busy or the addr is wrong
+  if (Wire.beginTransmission(_i2cAddress), Wire.write((uint8_t)0x01), Wire.endTransmission() != 0) return -1.0f;  // i2c error
 
-  // local params so other modes remain untouched  2  total wait ~10*15 ms = 150 ms
-  const uint8_t tries = 10;        // number of polls while waiting for data
-  const uint8_t poll_ms = 15;      // delay between polls
-  const float min_cm = 2.0f;       // plausible lower bound (too close -> treat as timeout)
-  const float max_cm = 450.0f;     // plausible upper bound (reject wild spikes)
+  const uint8_t tries = 15;    // number of short polls while the sensor computes (~15*15 ms = ~225 ms total)
+  const uint8_t poll_ms = 15;  // delay between polls so we do not block too long at once
+  const float min_cm = 2.0f;   // below this the sensor is effectively too close; treat as no reading
+  const float max_cm = 450.0f; // above this is an occasional spike; reject as invalid
 
-  // try primary 24-bit frame: micrometers (big-endian b0 b1 b2)  2  convert to cm
+  // primary format: 24-bit big-endian value in micrometers (b0 b1 b2)  2  most rcwl-96xx firmwares use this in i2c mode
   for (uint8_t i = 0; i < tries; i++) {
-    delay(poll_ms);  // wait for conversion
-    int n = Wire.requestFrom((int)_i2cAddress, 3);
+    delay(poll_ms);  // let the sensor finish its burst and dsp
+    int n = Wire.requestFrom((int)_i2cAddress, 3);  // ask for exactly 3 bytes; anything else means not ready yet
     if (n == 3) {
-      uint32_t b0 = Wire.read();
-      uint32_t b1 = Wire.read();
-      uint32_t b2 = Wire.read();
-      uint32_t um = (b0 << 16) | (b1 << 8) | b2;  // 24-bit micrometers
-      if (um == 0) continue;  // not ready yet
-      float cm = (float)um / 10000.0f;  // µm -> cm
-      if (cm >= min_cm && cm <= max_cm) return cm;  // valid reading
-      return -1.0f;  // out of plausible range -> treat as timeout
+      uint32_t b0 = Wire.read();  // most significant byte
+      uint32_t b1 = Wire.read();  // middle byte
+      uint32_t b2 = Wire.read();  // least significant byte
+      uint32_t um = (b0 << 16) | (b1 << 8) | b2;  // compose 24-bit micrometers
+      if (um == 0) continue;  // some firmwares signal "not ready" with zero; poll again
+      float cm = (float)um / 10000.0f;  // convert µm -> cm (10000 µm in 1 cm)
+      if (cm >= min_cm && cm <= max_cm) return cm;  // accept only plausible values to suppress spikes
+      return -1.0f;  // out-of-range reading; treat as timeout
     }
   }
 
-  // fallback: some firmwares return 16-bit millimeters (big-endian)  2  convert to cm
-  if (Wire.requestFrom((int)_i2cAddress, 2) == 2) {
-    uint16_t hi = Wire.read();
-    uint16_t lo = Wire.read();
-    uint16_t mm = (uint16_t)((hi << 8) | lo);
+  // fallback format: 16-bit big-endian millimeters (hi lo)  2  used by a few revisions; convert to centimeters
+  int m = Wire.requestFrom((int)_i2cAddress, 2);  // request exactly 2 bytes
+  if (m == 2) {
+    uint16_t hi = Wire.read();  // msb
+    uint16_t lo = Wire.read();  // lsb
+    uint16_t mm = (uint16_t)((hi << 8) | lo);  // compose 16-bit millimeters
     if (mm == 0) return -1.0f;  // not ready
     float cm = (float)mm / 10.0f;  // mm -> cm
-    if (cm >= min_cm && cm <= max_cm) return cm;  // valid
+    if (cm >= min_cm && cm <= max_cm) return cm;  // accept plausible fallback
   }
 
-  return -1.0f;  // timeout / invalid frame
+  return -1.0f;  // nothing valid read in the allowed time
 }
+
 
 // Измерение расстояния через UART
 float AlashUltrasonic::getDistanceUART() {
@@ -157,4 +156,5 @@ float AlashUltrasonic::calculateDistance(long duration) {
   float distance = (duration / 2.0) * 0.0343;
   return distance;
 }
+
 
